@@ -8,37 +8,58 @@ class KeyboardClicker:
     def __init__(self, root):
         self.root = root
         self.root.title("Keyboard Clicker - Windows PC")
-        self.root.geometry("600x900")
+        self.root.geometry("600x700")
         self.root.resizable(True, True)
         self.root.configure(bg="#f0f0f0")
         
         self.is_clicking = False
         self.click_thread = None
         self.total_clicks = 0
-        
-        # List untuk menyimpan sequence tombol
         self.key_sequence = []
         
         self.setup_ui()
         self.setup_keyboard_shortcuts()
         
     def setup_ui(self):
+        # Create main canvas with scrollbar
+        canvas_frame = tk.Frame(self.root, bg="#f0f0f0")
+        canvas_frame.pack(fill="both", expand=True)
+        
+        canvas = tk.Canvas(canvas_frame, bg="#f0f0f0", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Bind mouse wheel untuk scroll
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
         # Header
-        header_frame = tk.Frame(self.root, bg="#2196F3", height=60)
-        header_frame.pack(fill="x")
+        header_frame = tk.Frame(scrollable_frame, bg="#2196F3", height=60)
+        header_frame.pack(fill="x", padx=15, pady=(15, 10))
         
         title = tk.Label(
             header_frame,
-            text="⌨️ KEYBOARD CLICKER - SEQUENCE MODE",
+            text="⌨️ KEYBOARD CLICKER",
             font=("Arial", 16, "bold"),
             fg="white",
             bg="#2196F3"
         )
         title.pack(pady=15)
         
-        # Main Frame
-        main_frame = tk.Frame(self.root, bg="#f0f0f0")
-        main_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        main_frame = tk.Frame(scrollable_frame, bg="#f0f0f0")
+        main_frame.pack(fill="both", expand=True, padx=15, pady=10)
         
         # ===== MODE SELECTION =====
         mode_frame = tk.LabelFrame(
@@ -90,7 +111,7 @@ class KeyboardClicker:
         
         self.key_var = tk.StringVar(value="Space")
         
-        keys = ["Space", "Enter", "A", "B", "C", "D", "1", "2", "3", "Tab", "Backspace"]
+        keys = ["Space", "Enter", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Tab", "Backspace", "Shift", "Ctrl", "Alt"]
         
         key_combo = ttk.Combobox(
             self.single_mode_frame,
@@ -111,9 +132,7 @@ class KeyboardClicker:
             padx=10,
             pady=10
         )
-        self.sequence_mode_frame.pack(fill="x", pady=10)
         
-        # Tombol 1
         tk.Label(self.sequence_mode_frame, text="Tombol 1:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.seq_key1 = ttk.Combobox(
             self.sequence_mode_frame,
@@ -125,7 +144,6 @@ class KeyboardClicker:
         self.seq_key1.set("A")
         self.seq_key1.pack(fill="x", pady=5)
         
-        # Tombol 2
         tk.Label(self.sequence_mode_frame, text="Tombol 2:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.seq_key2 = ttk.Combobox(
             self.sequence_mode_frame,
@@ -137,7 +155,6 @@ class KeyboardClicker:
         self.seq_key2.set("B")
         self.seq_key2.pack(fill="x", pady=5)
         
-        # Tombol 3
         tk.Label(self.sequence_mode_frame, text="Tombol 3 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.seq_key3 = ttk.Combobox(
             self.sequence_mode_frame,
@@ -149,7 +166,6 @@ class KeyboardClicker:
         self.seq_key3.set("Tidak")
         self.seq_key3.pack(fill="x", pady=5)
         
-        # Tombol 4
         tk.Label(self.sequence_mode_frame, text="Tombol 4 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.seq_key4 = ttk.Combobox(
             self.sequence_mode_frame,
@@ -161,7 +177,6 @@ class KeyboardClicker:
         self.seq_key4.set("Tidak")
         self.seq_key4.pack(fill="x", pady=5)
         
-        # Tombol 5
         tk.Label(self.sequence_mode_frame, text="Tombol 5 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.seq_key5 = ttk.Combobox(
             self.sequence_mode_frame,
@@ -207,7 +222,7 @@ class KeyboardClicker:
         self.entry_hold.insert(0, "50")
         self.entry_hold.pack(fill="x", pady=5)
         
-        # ===== JUMLAH ULANGAN (UNTUK SINGLE MODE) =====
+        # ===== JUMLAH ULANGAN =====
         count_frame = tk.LabelFrame(
             main_frame,
             text="Jumlah Pengulangan",
@@ -223,35 +238,6 @@ class KeyboardClicker:
         self.entry_count = tk.Entry(count_frame, font=("Arial", 11), width=30)
         self.entry_count.insert(0, "10")
         self.entry_count.pack(fill="x", pady=5)
-        
-        # ===== STATUS =====
-        status_frame = tk.LabelFrame(
-            main_frame,
-            text="Status",
-            font=("Arial", 11, "bold"),
-            bg="#f0f0f0",
-            padx=10,
-            pady=10
-        )
-        status_frame.pack(fill="x", pady=10)
-        
-        self.status_label = tk.Label(
-            status_frame,
-            text="Status: SIAP",
-            font=("Arial", 10),
-            fg="#4CAF50",
-            bg="#f0f0f0"
-        )
-        self.status_label.pack(anchor="w")
-        
-        self.counter_label = tk.Label(
-            status_frame,
-            text="Total Klik: 0",
-            font=("Arial", 10),
-            fg="#2196F3",
-            bg="#f0f0f0"
-        )
-        self.counter_label.pack(anchor="w")
         
         # ===== BUTTONS =====
         button_frame = tk.Frame(main_frame, bg="#f0f0f0")
@@ -337,22 +323,21 @@ class KeyboardClicker:
     def get_sequence(self):
         """Get sequence dari input tombol"""
         sequence = []
+        keys = [self.seq_key1, self.seq_key2, self.seq_key3, self.seq_key4, self.seq_key5]
         
-        key1 = self.seq_key1.get().lower()
-        key2 = self.seq_key2.get().lower()
-        key3 = self.seq_key3.get().lower()
-        key4 = self.seq_key4.get().lower()
-        key5 = self.seq_key5.get().lower()
+        for combo in keys:
+            value = combo.get().strip().lower()
+            if value == "tidak" or value == "":
+                continue
+            sequence.append(value)
         
-        sequence.append(key1)
-        sequence.append(key2)
+        if len(sequence) < 2:
+            messagebox.showerror("Error", "Sequence mode harus berisi minimal 2 tombol.")
+            return []
         
-        if key3 != "tidak":
-            sequence.append(key3)
-        if key4 != "tidak":
-            sequence.append(key4)
-        if key5 != "tidak":
-            sequence.append(key5)
+        if len(sequence) > 5:
+            messagebox.showerror("Error", "Sequence mode maksimal 5 tombol.")
+            return []
         
         return sequence
             
@@ -374,12 +359,13 @@ class KeyboardClicker:
             key_list = [key]
         else:
             key_list = self.get_sequence()
+            if not key_list:
+                return
         
         self.is_clicking = True
         self.total_clicks = 0
         self.btn_start.config(state="disabled")
         self.btn_stop.config(state="normal")
-        self.status_label.config(text="Status: BERJALAN ▶", fg="#f44336")
         
         # Show mode info
         if mode == "single":
@@ -416,7 +402,6 @@ class KeyboardClicker:
                     keyboard.release(key)
                     
                     self.total_clicks += 1
-                    self.update_counter()
                     
                 except Exception as e:
                     print(f"Error: {e}")
@@ -427,17 +412,11 @@ class KeyboardClicker:
         self.stop_clicking()
         messagebox.showinfo("Selesai", f"Keyboard clicking selesai!\nTotal klik: {self.total_clicks}")
         
-    def update_counter(self):
-        """Update counter di UI"""
-        self.counter_label.config(text=f"Total Klik: {self.total_clicks}")
-        self.root.update_idletasks()
-        
     def stop_clicking(self):
         """Hentikan keyboard clicking"""
         self.is_clicking = False
         self.btn_start.config(state="normal")
         self.btn_stop.config(state="disabled")
-        self.status_label.config(text="Status: SIAP", fg="#4CAF50")
         
     def exit_app(self):
         """Tutup aplikasi"""
