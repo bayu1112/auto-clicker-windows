@@ -21,7 +21,7 @@ class KeyboardClicker:
         self.setup_keyboard_shortcuts()
         
     def setup_ui(self):
-        # Create main canvas with scrollbar
+        # Buat canvas + scrollbar
         canvas_frame = tk.Frame(self.root, bg="#f0f0f0")
         canvas_frame.pack(fill="both", expand=True)
         
@@ -37,9 +37,9 @@ class KeyboardClicker:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Bind mouse wheel untuk scroll
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -96,7 +96,7 @@ class KeyboardClicker:
         )
         sequence_radio.pack(anchor="w")
         
-        # ===== SINGLE MODE FRAME =====
+        #===== SINGLE MODE =====
         self.single_mode_frame = tk.LabelFrame(
             main_frame,
             text="Mode: Single Click",
@@ -108,10 +108,14 @@ class KeyboardClicker:
         self.single_mode_frame.pack(fill="x", pady=10)
         
         tk.Label(self.single_mode_frame, text="Pilih Tombol:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
-        
         self.key_var = tk.StringVar(value="Space")
         
-        keys = ["Space", "Enter", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Tab", "Backspace", "Shift", "Ctrl", "Alt"]
+        keys = [
+            "Space", "Enter", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
+            "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+            "Tab", "Backspace", "Shift", "Ctrl", "Alt"
+        ]
         
         key_combo = ttk.Combobox(
             self.single_mode_frame,
@@ -123,7 +127,7 @@ class KeyboardClicker:
         )
         key_combo.pack(fill="x", pady=5)
         
-        # ===== SEQUENCE MODE FRAME =====
+        #===== SEQUENCE MODE =====
         self.sequence_mode_frame = tk.LabelFrame(
             main_frame,
             text="Mode: Sequence (2-5 Tombol)",
@@ -200,7 +204,6 @@ class KeyboardClicker:
         delay_frame.pack(fill="x", pady=10)
         
         tk.Label(delay_frame, text="Jeda antar tombol (ms):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
-        
         self.entry_delay = tk.Entry(delay_frame, font=("Arial", 11), width=30)
         self.entry_delay.insert(0, "100")
         self.entry_delay.pack(fill="x", pady=5)
@@ -217,7 +220,6 @@ class KeyboardClicker:
         hold_frame.pack(fill="x", pady=10)
         
         tk.Label(hold_frame, text="Berapa lama tombol ditekan? (ms):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
-        
         self.entry_hold = tk.Entry(hold_frame, font=("Arial", 11), width=30)
         self.entry_hold.insert(0, "50")
         self.entry_hold.pack(fill="x", pady=5)
@@ -233,11 +235,20 @@ class KeyboardClicker:
         )
         count_frame.pack(fill="x", pady=10)
         
-        tk.Label(count_frame, text="Berapa kali sequence diulangi?", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
-        
+        tk.Label(count_frame, text="Isi 0 atau kosong untuk tidak terbatas:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
         self.entry_count = tk.Entry(count_frame, font=("Arial", 11), width=30)
         self.entry_count.insert(0, "10")
         self.entry_count.pack(fill="x", pady=5)
+        
+        self.infinite_var = tk.BooleanVar(value=False)
+        self.check_infinite = tk.Checkbutton(
+            count_frame,
+            text="Tidak terbatas (loop terus sampai STOP)",
+            variable=self.infinite_var,
+            bg="#f0f0f0",
+            font=("Arial", 10)
+        )
+        self.check_infinite.pack(anchor="w", pady=5)
         
         # ===== BUTTONS =====
         button_frame = tk.Frame(main_frame, bg="#f0f0f0")
@@ -281,7 +292,7 @@ class KeyboardClicker:
         
         info_text = tk.Label(
             info_frame,
-            text="F6 = Mulai Klik\nF7 = Stop Klik\nESC = Exit Aplikasi\n\nSingle Mode: Tekan 1 tombol berkali-kali\nSequence Mode: Tekan 2-5 tombol berurutan\n\n⚠️ Jangan gunakan untuk cheating game!",
+            text="F6 = Mulai Klik (langsung berjalan)\nF7 = Stop Klik\nESC = Exit Aplikasi\n\nSingle Mode: Tekan 1 tombol berkali-kali\nSequence Mode: Tekan 2-5 tombol berurutan\n\n✔ Tidak terbatas: isi 0 atau centang checkbox\n⚠️ Jangan gunakan untuk cheating game!",
             font=("Arial", 9),
             bg="#fff3cd",
             justify="left"
@@ -289,7 +300,6 @@ class KeyboardClicker:
         info_text.pack(anchor="w")
         
     def update_ui_mode(self):
-        """Update UI berdasarkan mode yang dipilih"""
         if self.mode_var.get() == "single":
             self.single_mode_frame.pack(fill="x", pady=10)
             self.sequence_mode_frame.pack_forget()
@@ -298,30 +308,29 @@ class KeyboardClicker:
             self.sequence_mode_frame.pack(fill="x", pady=10)
         
     def setup_keyboard_shortcuts(self):
-        """Setup keyboard shortcuts"""
         keyboard.add_hotkey('f6', self.start_clicking)
         keyboard.add_hotkey('f7', self.stop_clicking)
         keyboard.add_hotkey('esc', self.exit_app)
         
     def get_values(self):
-        """Get dan validate input values"""
         try:
-            count = int(self.entry_count.get())
+            raw_count = self.entry_count.get().strip()
+            count = int(raw_count) if raw_count != "" else 0
+            
             delay = int(self.entry_delay.get())
             hold = int(self.entry_hold.get())
             
-            if count <= 0:
-                raise ValueError("Jumlah pengulangan harus lebih dari 0!")
+            if count < 0:
+                raise ValueError("Jumlah pengulangan tidak boleh negatif!")
             if delay < 0 or hold < 0:
-                raise ValueError("Nilai tidak boleh negatif!")
-                
+                raise ValueError("Nilai jeda/tahan tidak boleh negatif!")
+            
             return count, delay, hold
         except ValueError as e:
             messagebox.showerror("Error", f"Input tidak valid!\n{str(e)}")
             return None
-            
+        
     def get_sequence(self):
-        """Get sequence dari input tombol"""
         sequence = []
         keys = [self.seq_key1, self.seq_key2, self.seq_key3, self.seq_key4, self.seq_key5]
         
@@ -340,20 +349,20 @@ class KeyboardClicker:
             return []
         
         return sequence
-            
+        
     def start_clicking(self):
-        """Mulai keyboard clicking"""
         if self.is_clicking:
             messagebox.showwarning("Warning", "Keyboard clicking sudah sedang berjalan!")
             return
-            
+        
         values = self.get_values()
         if values is None:
             return
-            
-        count, delay, hold = values
-        mode = self.mode_var.get()
         
+        count, delay, hold = values
+        infinite = self.infinite_var.get() or count == 0
+        
+        mode = self.mode_var.get()
         if mode == "single":
             key = self.key_var.get().lower()
             key_list = [key]
@@ -367,59 +376,51 @@ class KeyboardClicker:
         self.btn_start.config(state="disabled")
         self.btn_stop.config(state="normal")
         
-        # Show mode info
-        if mode == "single":
-            messagebox.showinfo("Info", f"Mode: SINGLE CLICK\nTombol: {self.key_var.get()}\nJumlah: {count}x\n\nKlicking akan dimulai dalam 3 detik.")
-        else:
-            sequence_str = " → ".join([k.upper() for k in key_list])
-            messagebox.showinfo("Info", f"Mode: SEQUENCE\nSequence: {sequence_str}\nUlangan: {count}x\n\nClicking akan dimulai dalam 3 detik.")
-        
-        # Start clicking thread
+        # Start clicking thread langsung tanpa countdown
         self.click_thread = threading.Thread(
             target=self.click_loop,
-            args=(key_list, count, delay, hold),
+            args=(key_list, count, delay, hold, infinite),
             daemon=True
         )
         self.click_thread.start()
         
-    def click_loop(self, key_list, count, delay, hold):
-        """Loop untuk melakukan klik berulang"""
-        time.sleep(3)  # Countdown 3 detik
-        
-        for i in range(count):
-            if not self.is_clicking:
-                break
-            
-            # Tekan setiap tombol dalam sequence
+    def click_loop(self, key_list, count, delay, hold, infinite):
+        # Langsung mulai tanpa countdown
+        while self.is_clicking:
+            # loop terbatas
+            if not infinite:
+                if count <= 0:
+                    break
+                
+            # proses satu siklus
             for key in key_list:
                 if not self.is_clicking:
                     break
-                    
+                
                 try:
-                    # Tekan tombol
                     keyboard.press(key)
-                    time.sleep(hold / 1000)  # Convert ms to seconds
+                    time.sleep(hold / 1000)
                     keyboard.release(key)
-                    
                     self.total_clicks += 1
-                    
                 except Exception as e:
                     print(f"Error: {e}")
                 
-                # Jeda antar tombol dalam sequence
                 time.sleep(delay / 1000)
             
+            # jika mode terbatas, kurangi hitung ulang
+            if not infinite:
+                count -= 1
+                if count <= 0:
+                    break
+        
         self.stop_clicking()
-        messagebox.showinfo("Selesai", f"Keyboard clicking selesai!\nTotal klik: {self.total_clicks}")
         
     def stop_clicking(self):
-        """Hentikan keyboard clicking"""
         self.is_clicking = False
         self.btn_start.config(state="normal")
         self.btn_stop.config(state="disabled")
         
     def exit_app(self):
-        """Tutup aplikasi"""
         self.is_clicking = False
         if messagebox.askokcancel("Exit", "Yakin ingin keluar?"):
             self.root.destroy()
