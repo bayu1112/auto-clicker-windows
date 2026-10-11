@@ -3,22 +3,22 @@ from tkinter import messagebox, ttk
 import keyboard
 import threading
 import time
-from datetime import datetime
 
 class KeyboardClicker:
     def __init__(self, root):
         self.root = root
         self.root.title("Keyboard Clicker - Windows PC")
-        self.root.geometry("500x650")
-        self.root.resizable(False, False)
+        self.root.geometry("600x900")
+        self.root.resizable(True, True)
         self.root.configure(bg="#f0f0f0")
         
-        # Variables
         self.is_clicking = False
         self.click_thread = None
         self.total_clicks = 0
         
-        # Setup UI
+        # List untuk menyimpan sequence tombol
+        self.key_sequence = []
+        
         self.setup_ui()
         self.setup_keyboard_shortcuts()
         
@@ -29,8 +29,8 @@ class KeyboardClicker:
         
         title = tk.Label(
             header_frame,
-            text="⌨️ KEYBOARD CLICKER",
-            font=("Arial", 18, "bold"),
+            text="⌨️ KEYBOARD CLICKER - SEQUENCE MODE",
+            font=("Arial", 16, "bold"),
             fg="white",
             bg="#2196F3"
         )
@@ -40,64 +40,140 @@ class KeyboardClicker:
         main_frame = tk.Frame(self.root, bg="#f0f0f0")
         main_frame.pack(fill="both", expand=True, padx=15, pady=15)
         
-        # ===== KEY TO PRESS =====
-        key_frame = tk.LabelFrame(
+        # ===== MODE SELECTION =====
+        mode_frame = tk.LabelFrame(
             main_frame,
-            text="Tombol yang Akan Ditekan",
+            text="Pilih Mode",
             font=("Arial", 11, "bold"),
             bg="#f0f0f0",
             padx=10,
             pady=10
         )
-        key_frame.pack(fill="x", pady=10)
+        mode_frame.pack(fill="x", pady=10)
         
-        tk.Label(key_frame, text="Pilih Tombol:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.mode_var = tk.StringVar(value="single")
         
-        self.key_var = tk.StringVar(value="space")
+        single_radio = tk.Radiobutton(
+            mode_frame,
+            text="Single Click (1 Tombol)",
+            variable=self.mode_var,
+            value="single",
+            font=("Arial", 10),
+            bg="#f0f0f0",
+            command=self.update_ui_mode
+        )
+        single_radio.pack(anchor="w")
         
-        keys = [
-            ("Space", "space"),
-            ("Enter", "enter"),
-            ("A", "a"),
-            ("B", "b"),
-            ("C", "c"),
-            ("1", "1"),
-            ("2", "2"),
-            ("3", "3"),
-            ("Left Click", "left_click"),
-            ("Right Click", "right_click"),
-        ]
+        sequence_radio = tk.Radiobutton(
+            mode_frame,
+            text="Sequence Mode (2-5 Tombol Berurutan)",
+            variable=self.mode_var,
+            value="sequence",
+            font=("Arial", 10),
+            bg="#f0f0f0",
+            command=self.update_ui_mode
+        )
+        sequence_radio.pack(anchor="w")
+        
+        # ===== SINGLE MODE FRAME =====
+        self.single_mode_frame = tk.LabelFrame(
+            main_frame,
+            text="Mode: Single Click",
+            font=("Arial", 11, "bold"),
+            bg="#f0f0f0",
+            padx=10,
+            pady=10
+        )
+        self.single_mode_frame.pack(fill="x", pady=10)
+        
+        tk.Label(self.single_mode_frame, text="Pilih Tombol:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        
+        self.key_var = tk.StringVar(value="Space")
+        
+        keys = ["Space", "Enter", "A", "B", "C", "D", "1", "2", "3", "Tab", "Backspace"]
         
         key_combo = ttk.Combobox(
-            key_frame,
+            self.single_mode_frame,
             textvariable=self.key_var,
-            values=[k[0] for k in keys],
+            values=keys,
             state="readonly",
             font=("Arial", 10),
             width=30
         )
         key_combo.pack(fill="x", pady=5)
         
-        self.key_map = {k[0]: k[1] for k in keys}
-        
-        # ===== CLICK COUNT =====
-        count_frame = tk.LabelFrame(
+        # ===== SEQUENCE MODE FRAME =====
+        self.sequence_mode_frame = tk.LabelFrame(
             main_frame,
-            text="Jumlah Klik",
+            text="Mode: Sequence (2-5 Tombol)",
             font=("Arial", 11, "bold"),
             bg="#f0f0f0",
             padx=10,
             pady=10
         )
-        count_frame.pack(fill="x", pady=10)
+        self.sequence_mode_frame.pack(fill="x", pady=10)
         
-        tk.Label(count_frame, text="Berapa kali menekan tombol?", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        # Tombol 1
+        tk.Label(self.sequence_mode_frame, text="Tombol 1:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.seq_key1 = ttk.Combobox(
+            self.sequence_mode_frame,
+            values=keys,
+            state="readonly",
+            font=("Arial", 10),
+            width=30
+        )
+        self.seq_key1.set("A")
+        self.seq_key1.pack(fill="x", pady=5)
         
-        self.entry_count = tk.Entry(count_frame, font=("Arial", 11), width=30)
-        self.entry_count.insert(0, "10")
-        self.entry_count.pack(fill="x", pady=5)
+        # Tombol 2
+        tk.Label(self.sequence_mode_frame, text="Tombol 2:", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.seq_key2 = ttk.Combobox(
+            self.sequence_mode_frame,
+            values=keys,
+            state="readonly",
+            font=("Arial", 10),
+            width=30
+        )
+        self.seq_key2.set("B")
+        self.seq_key2.pack(fill="x", pady=5)
         
-        # ===== DELAY SETTINGS =====
+        # Tombol 3
+        tk.Label(self.sequence_mode_frame, text="Tombol 3 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.seq_key3 = ttk.Combobox(
+            self.sequence_mode_frame,
+            values=["Tidak"] + keys,
+            state="readonly",
+            font=("Arial", 10),
+            width=30
+        )
+        self.seq_key3.set("Tidak")
+        self.seq_key3.pack(fill="x", pady=5)
+        
+        # Tombol 4
+        tk.Label(self.sequence_mode_frame, text="Tombol 4 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.seq_key4 = ttk.Combobox(
+            self.sequence_mode_frame,
+            values=["Tidak"] + keys,
+            state="readonly",
+            font=("Arial", 10),
+            width=30
+        )
+        self.seq_key4.set("Tidak")
+        self.seq_key4.pack(fill="x", pady=5)
+        
+        # Tombol 5
+        tk.Label(self.sequence_mode_frame, text="Tombol 5 (Opsional):", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        self.seq_key5 = ttk.Combobox(
+            self.sequence_mode_frame,
+            values=["Tidak"] + keys,
+            state="readonly",
+            font=("Arial", 10),
+            width=30
+        )
+        self.seq_key5.set("Tidak")
+        self.seq_key5.pack(fill="x", pady=5)
+        
+        # ===== JEDA ANTAR TOMBOL =====
         delay_frame = tk.LabelFrame(
             main_frame,
             text="Pengaturan Jeda",
@@ -114,7 +190,7 @@ class KeyboardClicker:
         self.entry_delay.insert(0, "100")
         self.entry_delay.pack(fill="x", pady=5)
         
-        # ===== HOLD TIME (untuk tombol yang dihold) =====
+        # ===== HOLD TIME =====
         hold_frame = tk.LabelFrame(
             main_frame,
             text="Durasi Tahan Tombol",
@@ -130,6 +206,23 @@ class KeyboardClicker:
         self.entry_hold = tk.Entry(hold_frame, font=("Arial", 11), width=30)
         self.entry_hold.insert(0, "50")
         self.entry_hold.pack(fill="x", pady=5)
+        
+        # ===== JUMLAH ULANGAN (UNTUK SINGLE MODE) =====
+        count_frame = tk.LabelFrame(
+            main_frame,
+            text="Jumlah Pengulangan",
+            font=("Arial", 11, "bold"),
+            bg="#f0f0f0",
+            padx=10,
+            pady=10
+        )
+        count_frame.pack(fill="x", pady=10)
+        
+        tk.Label(count_frame, text="Berapa kali sequence diulangi?", font=("Arial", 10), bg="#f0f0f0").pack(anchor="w")
+        
+        self.entry_count = tk.Entry(count_frame, font=("Arial", 11), width=30)
+        self.entry_count.insert(0, "10")
+        self.entry_count.pack(fill="x", pady=5)
         
         # ===== STATUS =====
         status_frame = tk.LabelFrame(
@@ -189,10 +282,10 @@ class KeyboardClicker:
         )
         self.btn_stop.pack(side="left", padx=5, fill="both", expand=True)
         
-        # ===== INFO BOX =====
+        # ===== INFO =====
         info_frame = tk.LabelFrame(
             main_frame,
-            text="Shortcut Keyboard",
+            text="Shortcut Keyboard & Info",
             font=("Arial", 10, "bold"),
             bg="#fff3cd",
             padx=10,
@@ -202,12 +295,21 @@ class KeyboardClicker:
         
         info_text = tk.Label(
             info_frame,
-            text="F6 = Mulai Klik\nF7 = Stop Klik\nESC = Exit Aplikasi",
+            text="F6 = Mulai Klik\nF7 = Stop Klik\nESC = Exit Aplikasi\n\nSingle Mode: Tekan 1 tombol berkali-kali\nSequence Mode: Tekan 2-5 tombol berurutan\n\n⚠️ Jangan gunakan untuk cheating game!",
             font=("Arial", 9),
             bg="#fff3cd",
             justify="left"
         )
         info_text.pack(anchor="w")
+        
+    def update_ui_mode(self):
+        """Update UI berdasarkan mode yang dipilih"""
+        if self.mode_var.get() == "single":
+            self.single_mode_frame.pack(fill="x", pady=10)
+            self.sequence_mode_frame.pack_forget()
+        else:
+            self.single_mode_frame.pack_forget()
+            self.sequence_mode_frame.pack(fill="x", pady=10)
         
     def setup_keyboard_shortcuts(self):
         """Setup keyboard shortcuts"""
@@ -222,13 +324,37 @@ class KeyboardClicker:
             delay = int(self.entry_delay.get())
             hold = int(self.entry_hold.get())
             
-            if count <= 0 or delay < 0 or hold < 0:
-                raise ValueError("Nilai harus positif!")
+            if count <= 0:
+                raise ValueError("Jumlah pengulangan harus lebih dari 0!")
+            if delay < 0 or hold < 0:
+                raise ValueError("Nilai tidak boleh negatif!")
                 
             return count, delay, hold
         except ValueError as e:
-            messagebox.showerror("Error", f"Input tidak valid!\n{str(e)}\nGunakan angka saja.")
+            messagebox.showerror("Error", f"Input tidak valid!\n{str(e)}")
             return None
+            
+    def get_sequence(self):
+        """Get sequence dari input tombol"""
+        sequence = []
+        
+        key1 = self.seq_key1.get().lower()
+        key2 = self.seq_key2.get().lower()
+        key3 = self.seq_key3.get().lower()
+        key4 = self.seq_key4.get().lower()
+        key5 = self.seq_key5.get().lower()
+        
+        sequence.append(key1)
+        sequence.append(key2)
+        
+        if key3 != "tidak":
+            sequence.append(key3)
+        if key4 != "tidak":
+            sequence.append(key4)
+        if key5 != "tidak":
+            sequence.append(key5)
+        
+        return sequence
             
     def start_clicking(self):
         """Mulai keyboard clicking"""
@@ -241,7 +367,13 @@ class KeyboardClicker:
             return
             
         count, delay, hold = values
-        key = self.key_map[self.key_var.get()]
+        mode = self.mode_var.get()
+        
+        if mode == "single":
+            key = self.key_var.get().lower()
+            key_list = [key]
+        else:
+            key_list = self.get_sequence()
         
         self.is_clicking = True
         self.total_clicks = 0
@@ -249,69 +381,48 @@ class KeyboardClicker:
         self.btn_stop.config(state="normal")
         self.status_label.config(text="Status: BERJALAN ▶", fg="#f44336")
         
-        # Countdown sebelum mulai
-        countdown = tk.Toplevel(self.root)
-        countdown.title("Countdown")
-        countdown.geometry("300x100")
-        countdown.resizable(False, False)
-        
-        countdown_label = tk.Label(
-            countdown,
-            text="Keyboard clicking akan dimulai dalam 3 detik...",
-            font=("Arial", 12),
-            wraplength=280
-        )
-        countdown_label.pack(pady=30)
-        
-        countdown.update()
-        for i in range(3, 0, -1):
-            countdown_label.config(text=f"Dimulai dalam {i} detik...")
-            countdown.update()
-            time.sleep(1)
-            
-        countdown.destroy()
+        # Show mode info
+        if mode == "single":
+            messagebox.showinfo("Info", f"Mode: SINGLE CLICK\nTombol: {self.key_var.get()}\nJumlah: {count}x\n\nKlicking akan dimulai dalam 3 detik.")
+        else:
+            sequence_str = " → ".join([k.upper() for k in key_list])
+            messagebox.showinfo("Info", f"Mode: SEQUENCE\nSequence: {sequence_str}\nUlangan: {count}x\n\nClicking akan dimulai dalam 3 detik.")
         
         # Start clicking thread
         self.click_thread = threading.Thread(
             target=self.click_loop,
-            args=(key, count, delay, hold),
+            args=(key_list, count, delay, hold),
             daemon=True
         )
         self.click_thread.start()
         
-    def click_loop(self, key, count, delay, hold):
+    def click_loop(self, key_list, count, delay, hold):
         """Loop untuk melakukan klik berulang"""
+        time.sleep(3)  # Countdown 3 detik
+        
         for i in range(count):
             if not self.is_clicking:
                 break
-                
-            try:
-                if key == "left_click":
-                    # Gunakan library pyautogui untuk mouse click
-                    try:
-                        import pyautogui
-                        pyautogui.click()
-                    except ImportError:
-                        keyboard.press_and_release('space')  # Fallback ke space
-                elif key == "right_click":
-                    try:
-                        import pyautogui
-                        pyautogui.rightClick()
-                    except ImportError:
-                        keyboard.press_and_release('space')
-                else:
-                    # Tekan dan lepas tombol
+            
+            # Tekan setiap tombol dalam sequence
+            for key in key_list:
+                if not self.is_clicking:
+                    break
+                    
+                try:
+                    # Tekan tombol
                     keyboard.press(key)
                     time.sleep(hold / 1000)  # Convert ms to seconds
                     keyboard.release(key)
+                    
+                    self.total_clicks += 1
+                    self.update_counter()
+                    
+                except Exception as e:
+                    print(f"Error: {e}")
                 
-                self.total_clicks += 1
-                self.update_counter()
-                
-            except Exception as e:
-                print(f"Error: {e}")
-                
-            time.sleep(delay / 1000)  # Convert ms to seconds
+                # Jeda antar tombol dalam sequence
+                time.sleep(delay / 1000)
             
         self.stop_clicking()
         messagebox.showinfo("Selesai", f"Keyboard clicking selesai!\nTotal klik: {self.total_clicks}")
